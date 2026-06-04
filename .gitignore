@@ -1,0 +1,13 @@
+# Local Claude Code agent settings & memory
+.claude/
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*.swp
+.vscode/
+.idea/
+
+# Node (if a build is added later)
+node_modules/
+dist/

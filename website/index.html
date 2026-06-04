@@ -1,0 +1,873 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>ToolTwin — Design tools for robots. Train robots to use them.</title>
+<meta name="description" content="Describe a tool in plain language, and ToolTwin writes the parametric CAD, builds a 3D twin, and exports print-ready STL + GLB. Then train your robot to use it in simulation — sim2real, no real-world data required." />
+<link rel="icon" type="image/png" href="assets/favicon.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+<script src="https://cdn.babylonjs.com/babylon.js"></script>
+<script src="https://cdn.babylonjs.com/serializers/babylonjs.serializers.min.js"></script>
+</head>
+<body>
+
+<!-- ============ NAV ============ -->
+<header class="nav" id="top">
+  <div class="nav-inner">
+    <a class="nav-logo" href="#top" aria-label="ToolTwin home">
+      <img src="assets/tooltwin-full.png" alt="ToolTwin" />
+    </a>
+    <nav class="nav-links">
+      <a href="#foundry">Foundry</a>
+      <a href="#how">How it works</a>
+      <a href="#train">Training Studio</a>
+      <a href="#ecosystem">Ecosystem</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+    <div class="nav-actions">
+      <a href="#" class="btn btn-ghost">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        <span>Docs</span>
+      </a>
+      <a href="#foundry" class="btn btn-primary">
+        <span>Launch app</span>
+      </a>
+    </div>
+  </div>
+</header>
+
+<!-- ============ HERO / TOOL FOUNDRY ============ -->
+<section id="foundry" class="hero">
+  <div class="hero-bg" aria-hidden="true"></div>
+
+  <div class="hero-grid">
+
+    <!-- LEFT: 3D VIEWPORT -->
+    <div class="viewport" id="viewport">
+
+      <div class="viewport-topbar">
+        <div class="vp-title">
+          <span class="vp-dot"></span>
+          <span id="vpModelName">Tool twin</span>
+          <span class="vp-badge" id="vpArchetype">—</span>
+        </div>
+        <div class="viewport-tabs" role="tablist" aria-label="Render mode">
+          <button class="vp-tab is-active" data-render="solid">Solid</button>
+          <button class="vp-tab" data-render="wire">Wireframe</button>
+        </div>
+      </div>
+
+      <div class="stage">
+        <div class="stage-grid" aria-hidden="true"></div>
+        <div class="stage-glow" aria-hidden="true"></div>
+
+        <div class="model-frame" id="modelFrame">
+          <canvas id="renderCanvas" touch-action="none"></canvas>
+
+          <!-- Empty state, before first generation -->
+          <div class="vp-empty" id="vpEmpty">
+            <div class="vp-empty-mark">
+              <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+            </div>
+            <p class="vp-empty-title">Your tool twin appears here</p>
+            <p class="vp-empty-sub">Describe a tool on the right and hit <b>Generate</b>. We'll write the parametric CAD and build a live 3D model you can tune.</p>
+          </div>
+
+          <!-- Generation overlay -->
+          <div class="vp-build" id="vpBuild" hidden>
+            <span class="vp-build-ring"></span>
+            <p class="vp-build-stage" id="vpBuildStage">Interpreting your prompt…</p>
+            <div class="vp-build-log" id="vpBuildLog"></div>
+          </div>
+        </div>
+
+        <!-- viewport controls -->
+        <div class="vp-controls">
+          <button class="vp-ctl" id="rotateL" title="Rotate left">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>
+          </button>
+          <button class="vp-ctl" id="resetView" title="Reset view">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+          </button>
+          <button class="vp-ctl" id="rotateR" title="Rotate right">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 14 20 9 15 4"/><path d="M4 20v-7a4 4 0 0 1 4-4h12"/></svg>
+          </button>
+          <div class="vp-divider"></div>
+          <button class="vp-ctl" id="zoomOut" title="Zoom out">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="20" y1="20" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+          </button>
+          <button class="vp-ctl" id="zoomIn" title="Zoom in">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="20" y1="20" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/><line x1="11" y1="8" x2="11" y2="14"/></svg>
+          </button>
+          <div class="vp-divider"></div>
+          <button class="vp-ctl" id="fullscreen" title="Fullscreen">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9V3h6"/><path d="M21 9V3h-6"/><path d="M3 15v6h6"/><path d="M21 15v6h-6"/></svg>
+          </button>
+        </div>
+
+        <!-- spec chips -->
+        <div class="spec-chips" id="specChips" hidden>
+          <div class="chip">
+            <span class="chip-label">Bounding box</span>
+            <span class="chip-value" id="statBBox">— mm</span>
+          </div>
+          <div class="chip">
+            <span class="chip-label">Volume</span>
+            <span class="chip-value" id="statVolume">— cm³</span>
+          </div>
+          <div class="chip">
+            <span class="chip-label">Est. print</span>
+            <span class="chip-value" id="statPrint">—</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: GUIDED PANEL -->
+    <aside class="panel" id="panel">
+
+      <!-- Welcome / intro state -->
+      <div class="panel-screen is-active" data-screen="welcome">
+        <span class="eyebrow">Tool Foundry</span>
+        <h1 class="panel-title">Describe a tool.<br/>Get a robot-ready twin.</h1>
+        <p class="panel-text">
+          Type what your robot needs to do. An LLM writes the parametric CAD,
+          builds a live 3D twin, and hands you print-ready files — then sends it
+          straight into the Training Studio.
+        </p>
+
+        <ul class="quick-list">
+          <li><span class="qbadge">1</span><span>Describe the tool &amp; set a few parameters</span></li>
+          <li><span class="qbadge">2</span><span>Tune the generated model in real time</span></li>
+          <li><span class="qbadge">3</span><span>Export STL + GLB, or train a robot with it</span></li>
+        </ul>
+
+        <div class="panel-actions">
+          <button class="btn btn-primary btn-lg" data-go="describe">
+            <span>Start a tool</span>
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </button>
+          <a href="#how" class="btn btn-ghost btn-lg">How it works</a>
+        </div>
+
+        <div class="panel-foot">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          <span>Every tool is fully parametric — change a number, the geometry rebuilds. No mesh editing.</span>
+        </div>
+      </div>
+
+      <!-- Step container -->
+      <div class="panel-screen" data-screen="steps">
+
+        <div class="stepper">
+          <button class="step is-active" data-step="describe">
+            <span class="step-num">1</span>
+            <span class="step-label">Describe</span>
+          </button>
+          <span class="step-line"></span>
+          <button class="step" data-step="tune">
+            <span class="step-num">2</span>
+            <span class="step-label">Tune</span>
+          </button>
+          <span class="step-line"></span>
+          <button class="step" data-step="export">
+            <span class="step-num">3</span>
+            <span class="step-label">Export</span>
+          </button>
+        </div>
+
+        <!-- STEP 1: DESCRIBE -->
+        <div class="step-body is-active" data-body="describe">
+          <div class="step-scroll">
+            <h2 class="step-title">Describe the tool</h2>
+            <p class="step-desc">Plain language is enough. The parameters below steer the generator.</p>
+
+            <label class="field-block">
+              <span class="field-label">Prompt</span>
+              <textarea id="toolPrompt" class="prompt-input" rows="3" placeholder="e.g. A two-finger gripper jaw to pick up a 40 mm jar lid…"></textarea>
+            </label>
+
+            <div class="example-chips" id="exampleChips">
+              <span class="example-chips-label">Try:</span>
+              <button type="button" class="ex-chip" data-arch="gripper">Parallel gripper jaw</button>
+              <button type="button" class="ex-chip" data-arch="hook">Pull hook for handles</button>
+              <button type="button" class="ex-chip" data-arch="scraper">Flat scraper blade</button>
+              <button type="button" class="ex-chip" data-arch="probe">Slim inspection probe</button>
+            </div>
+
+            <h3 class="subsection-title">Parameters</h3>
+
+            <div class="param-grid">
+              <label class="field-block">
+                <span class="field-label">Material</span>
+                <div class="select-wrap">
+                  <select id="optMaterial">
+                    <option value="petg">PETG — tough, default</option>
+                    <option value="pla">PLA — rigid, easy</option>
+                    <option value="abs">ABS — heat-resistant</option>
+                    <option value="nylon">Nylon (PA) — wear-resistant</option>
+                    <option value="tpu">TPU — flexible grip</option>
+                    <option value="alu">Aluminium — CNC / metal</option>
+                  </select>
+                </div>
+              </label>
+
+              <label class="field-block">
+                <span class="field-label">Tool family</span>
+                <div class="select-wrap">
+                  <select id="optArchetype">
+                    <option value="auto">Auto-detect from prompt</option>
+                    <option value="gripper">Gripper jaw</option>
+                    <option value="hook">Hook</option>
+                    <option value="scraper">Scraper / spatula</option>
+                    <option value="probe">Probe / pointer</option>
+                  </select>
+                </div>
+              </label>
+            </div>
+
+            <div class="field-block">
+              <span class="field-label">Mounting</span>
+              <div class="segmented" id="optMount" role="radiogroup" aria-label="Mounting">
+                <button type="button" class="seg is-active" data-mount="handheld" role="radio" aria-checked="true">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 11V6a2 2 0 0 0-2-2 2 2 0 0 0-2 2"/><path d="M14 10V4a2 2 0 0 0-2-2 2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2 2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg>
+                  <span>Hand-held</span>
+                </button>
+                <button type="button" class="seg" data-mount="wrist" role="radio" aria-checked="false">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg>
+                  <span>Wrist-mount</span>
+                </button>
+                <button type="button" class="seg" data-mount="bench" role="radio" aria-checked="false">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="14" width="18" height="6" rx="1"/><path d="M7 14V8a5 5 0 0 1 10 0v6"/></svg>
+                  <span>Bench</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="param-grid">
+              <label class="field-block">
+                <span class="field-label">Size class</span>
+                <div class="select-wrap">
+                  <select id="optSize">
+                    <option value="s">Compact</option>
+                    <option value="m" selected>Standard</option>
+                    <option value="l">Heavy-duty</option>
+                  </select>
+                </div>
+              </label>
+              <label class="field-block">
+                <span class="field-label">Robot arm <span class="muted">(fit)</span></span>
+                <div class="select-wrap">
+                  <select id="optArm">
+                    <option value="g1">AgiBot G1</option>
+                    <option value="g2">AgiBot G2</option>
+                    <option value="generic">Generic / ISO flange</option>
+                  </select>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div class="step-nav">
+            <button class="btn btn-ghost" data-go="welcome">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+              <span>Back</span>
+            </button>
+            <button class="btn btn-primary" id="generateBtn">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3m0 12v3M5.6 5.6l2.1 2.1m8.6 8.6 2.1 2.1M3 12h3m12 0h3M5.6 18.4l2.1-2.1m8.6-8.6 2.1-2.1"/></svg>
+              <span>Generate tool</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- STEP 2: TUNE -->
+        <div class="step-body" data-body="tune">
+          <div class="step-scroll">
+            <div class="tune-head">
+              <div>
+                <h2 class="step-title">Tune the model</h2>
+                <p class="step-desc">Drag a parameter — the twin rebuilds instantly.</p>
+              </div>
+              <button class="btn btn-ghost btn-sm" id="regenBtn" title="Back to prompt">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v6h6"/><path d="M3 13a9 9 0 1 0 3-7.7L3 8"/></svg>
+                <span>Re-prompt</span>
+              </button>
+            </div>
+
+            <div class="param-readout" id="paramReadout">
+              <span class="param-readout-label">Parametric source</span>
+              <code id="paramCode">tool = Tool()</code>
+            </div>
+
+            <div class="tune-grid" id="tuneGrid">
+              <!-- Sliders injected by script.js based on the active archetype -->
+            </div>
+          </div>
+
+          <div class="step-nav">
+            <button class="btn btn-ghost" data-go="describe">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+              <span>Back</span>
+            </button>
+            <button class="btn btn-primary" data-go="export">
+              <span>Accept design</span>
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- STEP 3: EXPORT -->
+        <div class="step-body" data-body="export">
+          <div class="step-scroll">
+            <h2 class="step-title">Export &amp; deploy</h2>
+            <p class="step-desc">Your twin is locked in. Download the files, or take it into training.</p>
+
+            <div class="review-card" id="reviewCard">
+              <div class="review-row"><span>Tool</span><b id="revName">—</b></div>
+              <div class="review-row"><span>Material</span><b id="revMaterial">—</b></div>
+              <div class="review-row"><span>Mounting</span><b id="revMount">—</b></div>
+              <div class="review-row"><span>Bounding box</span><b id="revBBox">—</b></div>
+              <div class="review-row"><span>Volume</span><b id="revVolume">—</b></div>
+              <div class="review-row"><span>Est. print</span><b id="revPrint">—</b></div>
+            </div>
+
+            <div class="download-grid">
+              <button class="dl-card" data-dl="stl">
+                <span class="dl-ico">STL</span>
+                <span class="dl-text"><b>Print-ready mesh</b><span>For any slicer — Cura, Prusa, Bambu</span></span>
+                <svg class="dl-arrow" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              </button>
+              <button class="dl-card" data-dl="glb">
+                <span class="dl-ico glb">GLB</span>
+                <span class="dl-text"><b>Web / sim model</b><span>Visualization &amp; simulation assets</span></span>
+                <svg class="dl-arrow" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              </button>
+              <button class="dl-card" data-dl="py">
+                <span class="dl-ico py">PY</span>
+                <span class="dl-text"><b>Parametric source</b><span>CadQuery script — edit &amp; re-run</span></span>
+                <svg class="dl-arrow" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              </button>
+            </div>
+
+            <div class="bridge-card">
+              <div class="bridge-text">
+                <span class="bridge-eyebrow">Next</span>
+                <b>Train a robot to use this tool</b>
+                <span>Send the twin into the Training Studio and run sim2real — no real-world data needed.</span>
+              </div>
+              <a href="#train" class="btn btn-accent" id="toTrainingBtn">
+                <span>Open Training Studio</span>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+              </a>
+            </div>
+          </div>
+
+          <div class="step-nav">
+            <button class="btn btn-ghost" data-go="tune">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+              <span>Back to tune</span>
+            </button>
+            <button class="btn btn-ghost" data-go="welcome">New tool</button>
+          </div>
+        </div>
+
+      </div>
+
+    </aside>
+
+  </div>
+
+  <div class="scroll-hint">
+    <span>Scroll to see the full platform</span>
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+  </div>
+</section>
+
+<!-- ============ HOW IT WORKS ============ -->
+<section id="how" class="section section-how">
+  <div class="container">
+    <div class="section-head">
+      <span class="eyebrow">How tool generation works</span>
+      <h2 class="section-title">From a sentence to a printable,<br/>simulation-ready tool.</h2>
+      <p class="section-lede">No CAD skills. You describe intent; the model reasons about geometry, writes parametric code, and gives you something you can both 3D-print and drop into a physics sim.</p>
+    </div>
+
+    <ol class="steps">
+      <li class="step-card">
+        <span class="step-card-num">01</span>
+        <div class="step-card-icon">
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v12H5.17L4 17.17z"/><path d="M8 9h8M8 12h5"/></svg>
+        </div>
+        <h3>Describe intent</h3>
+        <p>Say what the tool must do and pick a few parameters — material, mounting, size, target robot arm.</p>
+      </li>
+      <li class="step-card">
+        <span class="step-card-num">02</span>
+        <div class="step-card-icon">
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+        </div>
+        <h3>LLM writes the CAD</h3>
+        <p>An LLM emits a parametric <b>CadQuery</b> script — real B-rep geometry, not a blob of triangles.</p>
+      </li>
+      <li class="step-card">
+        <span class="step-card-num">03</span>
+        <div class="step-card-icon">
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg>
+        </div>
+        <h3>Build the twin</h3>
+        <p>The script runs in the cloud and streams back a live 3D twin with exposed, named parameters.</p>
+      </li>
+      <li class="step-card">
+        <span class="step-card-num">04</span>
+        <div class="step-card-icon">
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"/></svg>
+        </div>
+        <h3>Tune in real time</h3>
+        <p>Drag any parameter and watch the geometry rebuild. Lock it in when the fit is right.</p>
+      </li>
+      <li class="step-card">
+        <span class="step-card-num">05</span>
+        <div class="step-card-icon">
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        </div>
+        <h3>Export the files</h3>
+        <p>Download <b>STL</b> for printing, <b>GLB</b> for the web, and the <b>CadQuery</b> source to keep iterating.</p>
+      </li>
+      <li class="step-card">
+        <span class="step-card-num">06</span>
+        <div class="step-card-icon">
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/></svg>
+        </div>
+        <h3>Train the robot</h3>
+        <p>Push the tool into the Training Studio and teach a robot to use it — entirely in simulation.</p>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<!-- ============ TRAINING STUDIO ============ -->
+<section id="train" class="section section-train">
+  <div class="container">
+    <div class="section-head">
+      <span class="eyebrow">Training Studio · sim2real</span>
+      <h2 class="section-title">Teach the robot to use it —<br/>without touching a robot.</h2>
+      <p class="section-lede">Built on the open <b>Genie Sim</b> stack (Isaac Sim under the hood). You describe a task, we generate a randomized scene, roll out thousands of episodes, train a policy, and validate zero-shot sim2real transfer — all from this panel.</p>
+    </div>
+
+    <div class="studio">
+      <!-- LEFT: scene preview -->
+      <div class="studio-stage" id="studioStage">
+        <div class="studio-topbar">
+          <div class="vp-title">
+            <span class="vp-dot"></span>
+            <span id="sceneRobotName">AgiBot G1</span>
+            <span class="vp-badge" id="sceneEnvName">Workbench</span>
+          </div>
+          <div class="studio-randos" id="studioRandos" aria-label="Domain randomization active"></div>
+        </div>
+
+        <div class="studio-scene">
+          <div class="scene-grid" aria-hidden="true"></div>
+          <!-- Simple SVG diorama: ground, robot, tool, target object -->
+          <svg class="scene-art" viewBox="0 0 520 360" aria-hidden="true">
+            <defs>
+              <linearGradient id="robotG" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#cfe9bd"/><stop offset="1" stop-color="#7fbf4c"/>
+              </linearGradient>
+              <linearGradient id="armG" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0" stop-color="#39434d"/><stop offset="1" stop-color="#222a31"/>
+              </linearGradient>
+            </defs>
+            <!-- robot base / torso -->
+            <rect x="60" y="120" width="86" height="150" rx="14" fill="url(#robotG)"/>
+            <rect x="74" y="92" width="58" height="46" rx="12" fill="#2a333b"/>
+            <circle cx="92" cy="114" r="5" fill="#7fbf4c"/><circle cx="114" cy="114" r="5" fill="#7fbf4c"/>
+            <!-- upper arm -->
+            <rect x="138" y="150" width="120" height="20" rx="10" fill="url(#armG)" transform="rotate(-18 138 160)"/>
+            <!-- forearm -->
+            <rect x="232" y="120" width="110" height="18" rx="9" fill="url(#armG)" transform="rotate(14 232 129)"/>
+            <!-- tool at end effector -->
+            <g id="sceneTool" transform="translate(338 150)">
+              <rect x="-6" y="-4" width="18" height="40" rx="4" fill="#3a444e"/>
+              <rect x="10" y="-2" width="26" height="9" rx="3" fill="#7fbf4c"/>
+              <rect x="10" y="22" width="26" height="9" rx="3" fill="#7fbf4c"/>
+            </g>
+            <!-- target object on bench -->
+            <rect x="360" y="232" width="70" height="40" rx="8" fill="#c7a35a" id="sceneTarget"/>
+            <!-- bench -->
+            <rect x="300" y="270" width="200" height="14" rx="4" fill="#2a333b"/>
+            <rect x="316" y="284" width="12" height="40" fill="#222a31"/>
+            <rect x="472" y="284" width="12" height="40" fill="#222a31"/>
+          </svg>
+
+          <div class="scene-tag scene-tag-tool" id="sceneToolTag">No tool</div>
+          <div class="scene-tag scene-tag-task" id="sceneTaskTag">Describe a task →</div>
+        </div>
+
+        <!-- Job dashboard (revealed on launch) -->
+        <div class="job-dash" id="jobDash" hidden>
+          <div class="job-head">
+            <div>
+              <span class="job-eyebrow" id="jobId">job —</span>
+              <b class="job-title" id="jobTitle">Training run</b>
+            </div>
+            <span class="job-status" id="jobStatus">Queued</span>
+          </div>
+
+          <ul class="job-pipeline" id="jobPipeline">
+            <li data-stage="scene"><span class="js-dot"></span>Build scene</li>
+            <li data-stage="data"><span class="js-dot"></span>Generate episodes</li>
+            <li data-stage="train"><span class="js-dot"></span>Train policy</li>
+            <li data-stage="eval"><span class="js-dot"></span>Evaluate &amp; sim2real</li>
+            <li data-stage="export"><span class="js-dot"></span>Export policy</li>
+          </ul>
+
+          <div class="job-progress"><span class="job-progress-bar" id="jobProgressBar"></span></div>
+
+          <div class="job-metrics">
+            <div class="jm"><span class="jm-label">Episodes</span><b class="jm-value" id="jmEpisodes">0</b></div>
+            <div class="jm"><span class="jm-label">Sim hours</span><b class="jm-value" id="jmHours">0</b></div>
+            <div class="jm"><span class="jm-label">Success rate</span><b class="jm-value" id="jmSuccess">—</b></div>
+            <div class="jm"><span class="jm-label">Sim2real gap</span><b class="jm-value" id="jmGap">—</b></div>
+          </div>
+
+          <button class="btn btn-accent btn-block" id="jobDownload" hidden>
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span>Download policy &amp; dataset</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- RIGHT: training config -->
+      <aside class="studio-panel" id="studioPanel">
+        <div class="stepper stepper-studio">
+          <button class="step is-active" data-tstep="robot"><span class="step-num">1</span><span class="step-label">Robot</span></button>
+          <span class="step-line"></span>
+          <button class="step" data-tstep="task"><span class="step-num">2</span><span class="step-label">Task</span></button>
+          <span class="step-line"></span>
+          <button class="step" data-tstep="config"><span class="step-num">3</span><span class="step-label">Train</span></button>
+        </div>
+
+        <!-- T-STEP 1: ROBOT + TOOL -->
+        <div class="tstep-body is-active" data-tbody="robot">
+          <div class="step-scroll">
+            <h3 class="step-title">Pick a robot &amp; tool</h3>
+            <p class="step-desc">Choose the embodiment, then attach the tool you just designed — or train the robot on its own.</p>
+
+            <span class="group-label">Robot</span>
+            <div class="card-pick" id="robotPick">
+              <button type="button" class="pick is-active" data-robot="AgiBot G1">
+                <span class="pick-title">AgiBot G1</span>
+                <span class="pick-sub">Dual-arm humanoid · 7-DoF</span>
+              </button>
+              <button type="button" class="pick" data-robot="AgiBot G2">
+                <span class="pick-title">AgiBot G2</span>
+                <span class="pick-sub">Mobile humanoid · whole-body</span>
+              </button>
+            </div>
+
+            <span class="group-label">Tool</span>
+            <div class="card-pick card-pick-col" id="toolPick">
+              <button type="button" class="pick is-active" data-tool="mine" id="pickMyTool">
+                <span class="pick-row">
+                  <span class="pick-title">My tool</span>
+                  <span class="pick-pill" id="myToolPill">none yet</span>
+                </span>
+                <span class="pick-sub">Use the twin from the Foundry above</span>
+              </button>
+              <button type="button" class="pick" data-tool="none">
+                <span class="pick-title">No tool</span>
+                <span class="pick-sub">Train the robot &amp; environment only</span>
+              </button>
+            </div>
+          </div>
+          <div class="step-nav">
+            <span></span>
+            <button class="btn btn-primary" data-tgo="task"><span>Next</span>
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- T-STEP 2: TASK + SCENE -->
+        <div class="tstep-body" data-tbody="task">
+          <div class="step-scroll">
+            <h3 class="step-title">Describe the task &amp; scene</h3>
+            <p class="step-desc">Natural language becomes a randomized scene with success criteria — no manual scripting.</p>
+
+            <label class="field-block">
+              <span class="field-label">Task prompt</span>
+              <textarea id="taskPrompt" class="prompt-input" rows="2" placeholder="e.g. Pick up the jar lid from the bench and place it in the bin."></textarea>
+            </label>
+
+            <span class="group-label">Environment</span>
+            <div class="env-grid" id="envGrid">
+              <button type="button" class="env is-active" data-env="Workbench">Workbench</button>
+              <button type="button" class="env" data-env="Kitchen">Kitchen</button>
+              <button type="button" class="env" data-env="Warehouse">Warehouse</button>
+              <button type="button" class="env" data-env="Lab">Lab</button>
+            </div>
+          </div>
+          <div class="step-nav">
+            <button class="btn btn-ghost" data-tgo="robot">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg><span>Back</span>
+            </button>
+            <button class="btn btn-primary" data-tgo="config"><span>Next</span>
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- T-STEP 3: CONFIG + LAUNCH -->
+        <div class="tstep-body" data-tbody="config">
+          <div class="step-scroll">
+            <h3 class="step-title">Training configuration</h3>
+            <p class="step-desc">Set the data budget, domain randomization, and the policy to train.</p>
+
+            <label class="field">
+              <span class="field-label">Episodes to generate <span class="field-out" id="epOut">5,000</span></span>
+              <input type="range" id="rangeEpisodes" min="500" max="20000" step="500" value="5000" />
+            </label>
+
+            <span class="group-label">Domain randomization</span>
+            <div class="rando-list" id="randoList">
+              <label class="rando"><input type="checkbox" data-rando="Lighting" checked /><span>Lighting</span></label>
+              <label class="rando"><input type="checkbox" data-rando="Object pose" checked /><span>Object pose</span></label>
+              <label class="rando"><input type="checkbox" data-rando="Textures" checked /><span>Textures</span></label>
+              <label class="rando"><input type="checkbox" data-rando="Camera noise" /><span>Camera noise</span></label>
+              <label class="rando"><input type="checkbox" data-rando="Physics" /><span>Physics / friction</span></label>
+            </div>
+
+            <label class="field-block">
+              <span class="field-label">Policy</span>
+              <div class="select-wrap">
+                <select id="optPolicy">
+                  <option value="act">ACT — Action Chunking Transformer</option>
+                  <option value="dp">Diffusion Policy</option>
+                  <option value="pi0">π0 — Vision-Language-Action</option>
+                  <option value="go1">GO-1 — AgiBot foundation model</option>
+                </select>
+              </div>
+            </label>
+
+            <div class="field-block">
+              <span class="field-label">Data source</span>
+              <div class="segmented" id="optData">
+                <button type="button" class="seg is-active" data-data="scripted">Scripted rollouts</button>
+                <button type="button" class="seg" data-data="teleop">Teleop demos</button>
+              </div>
+            </div>
+          </div>
+          <div class="step-nav">
+            <button class="btn btn-ghost" data-tgo="task">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg><span>Back</span>
+            </button>
+            <button class="btn btn-accent" id="launchBtn">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91 0z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/></svg>
+              <span>Launch training</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- T-STEP 4: RUNNING (replaces nav while a job is live) -->
+        <div class="tstep-body" data-tbody="running">
+          <div class="step-scroll">
+            <h3 class="step-title">Training in progress</h3>
+            <p class="step-desc">Generating data and optimizing the policy. Watch the run on the left — you'll get a notification when it's ready to deploy.</p>
+            <ul class="run-summary" id="runSummary"></ul>
+          </div>
+          <div class="step-nav">
+            <button class="btn btn-ghost" id="newRunBtn">New run</button>
+            <span class="run-live"><span class="run-live-dot"></span> live</span>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ECOSYSTEM ============ -->
+<section id="ecosystem" class="section section-eco">
+  <div class="container">
+    <div class="section-head">
+      <span class="eyebrow eyebrow-light">One ecosystem</span>
+      <h2 class="section-title">Design the tool here.<br/>Train the robot here.</h2>
+      <p class="section-lede section-lede-light">When the tool is born on ToolTwin, its parametric twin, its print files, and its simulation asset all live in one place — so the natural place to teach a robot to use it is right here too.</p>
+    </div>
+
+    <div class="eco-grid">
+      <div class="eco-card">
+        <div class="eco-ico">
+          <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+        </div>
+        <h3>Tool &amp; robot, paired</h3>
+        <p>The same twin you tuned becomes the collision &amp; visual asset in simulation. No re-modeling, no format wrangling.</p>
+      </div>
+      <div class="eco-card">
+        <div class="eco-ico">
+          <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M2 12h20"/><circle cx="12" cy="12" r="9"/></svg>
+        </div>
+        <h3>Real robots, real partner</h3>
+        <p>Policies target <b>AgiBot</b> G1 / G2 hardware that Omnipresent Robotics deploys — what trains in sim runs on the floor.</p>
+      </div>
+      <div class="eco-card">
+        <div class="eco-ico">
+          <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+        </div>
+        <h3>Data compounds</h3>
+        <p>Every tool and task you run adds to a growing library of assets, scenes, and policies you own and can re-use.</p>
+      </div>
+    </div>
+
+    <div class="eco-stats">
+      <div class="eco-stat"><b>min</b><span>from prompt to printable tool</span></div>
+      <div class="eco-stat"><b>0</b><span>real-world demos required to start</span></div>
+      <div class="eco-stat"><b>G1·G2</b><span>AgiBot embodiments supported</span></div>
+      <div class="eco-stat"><b>1</b><span>place for design → print → train</span></div>
+    </div>
+
+    <p class="eco-foot">An <b>Omnipresent Robotics</b> platform, in partnership with <b>AgiBot</b>. Built on the open Genie Sim simulation stack.</p>
+  </div>
+</section>
+
+<!-- ============ WHAT YOU GET ============ -->
+<section id="specs" class="section section-specs">
+  <div class="container two-col">
+    <div class="two-col-text">
+      <span class="eyebrow">What you walk away with</span>
+      <h2 class="section-title">Files for the printer,<br/>assets for the sim.</h2>
+      <p class="section-lede">Every generated tool is a real engineering artifact — not a one-off render. Keep it, edit it, print it, train with it.</p>
+
+      <ul class="check-list">
+        <li><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span><b>STL mesh</b> — watertight, oriented and ready for any slicer.</span></li>
+        <li><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span><b>GLB model</b> — for the web viewer and as a simulation visual asset.</span></li>
+        <li><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span><b>CadQuery source</b> — the parametric script, yours to edit and re-run.</span></li>
+        <li><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span><b>Sim package</b> — URDF + collision mesh, mounted to your chosen arm flange.</span></li>
+        <li><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span><b>Trained policy</b> — checkpoint + dataset after a Training Studio run.</span></li>
+      </ul>
+    </div>
+
+    <div class="two-col-art">
+      <div class="files-card">
+        <div class="files-head">
+          <span>tooltwin_export.zip</span>
+          <span class="files-size">8.6 MB</span>
+        </div>
+        <ul class="files-list">
+          <li><span class="file-ico">STL</span><span>gripper_jaw.stl</span><span class="file-meta">watertight</span></li>
+          <li><span class="file-ico glb">GLB</span><span>gripper_jaw.glb</span><span class="file-meta">PBR · web</span></li>
+          <li><span class="file-ico py">PY</span><span>gripper_jaw.py</span><span class="file-meta">CadQuery</span></li>
+          <li><span class="file-ico">URDF</span><span>gripper_jaw.urdf</span><span class="file-meta">sim</span></li>
+          <li><span class="file-ico">JSON</span><span>parameters.json</span><span class="file-meta">12 params</span></li>
+          <li><span class="file-ico pdf">PDF</span><span>print_profile.pdf</span><span class="file-meta">slicer</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FAQ ============ -->
+<section id="faq" class="section section-faq">
+  <div class="container">
+    <div class="section-head">
+      <span class="eyebrow">FAQ</span>
+      <h2 class="section-title">The honest answers.</h2>
+    </div>
+
+    <div class="faq-list">
+      <details class="faq-item" open>
+        <summary>Do I need to know CAD?</summary>
+        <p>No. You describe what the tool should do and set a few parameters. The model writes the parametric CAD for you; you only ever touch sliders.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Why CadQuery instead of just generating a mesh?</summary>
+        <p>CadQuery produces real solid (B-rep) geometry driven by named parameters. That means the tool is editable, manufacturable, and rebuilds cleanly when you change a dimension — a generated mesh can't do any of that.</p>
+      </details>
+      <details class="faq-item">
+        <summary>What is "sim2real" and why does it matter?</summary>
+        <p>It's training a policy entirely in simulation and deploying it on a real robot with no fine-tuning. With enough domain randomization, the policy generalizes to the messiness of the real world — so you don't need thousands of expensive real-world demonstrations to get started.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Which robots are supported?</summary>
+        <p>The Training Studio targets AgiBot G1 and G2 to start — the embodiments Omnipresent Robotics deploys. A generic ISO-flange option lets you fit tools to other arms.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Do I have to train a robot to use the tools?</summary>
+        <p>Not at all. The Foundry stands on its own — generate a tool and download the files. Training is there when you want your robot to actually use what you made.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Where does the heavy compute run?</summary>
+        <p>Scene generation, episode rollouts, and policy training run on GPU infrastructure in the cloud (Isaac Sim under the hood). This page is the human layer — you configure and monitor; the cluster does the work.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CTA ============ -->
+<section class="section section-cta">
+  <div class="container cta-inner">
+    <div class="cta-text">
+      <span class="eyebrow eyebrow-light">Ready when you are</span>
+      <h2>Make the tool. Train the robot.</h2>
+      <p>Start with a single sentence. You'll have a printable, simulation-ready tool in minutes — and a robot that knows how to use it not long after.</p>
+    </div>
+    <div class="cta-actions">
+      <a href="#foundry" class="btn btn-light btn-lg">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3m0 12v3M5.6 5.6l2.1 2.1m8.6 8.6 2.1 2.1M3 12h3m12 0h3M5.6 18.4l2.1-2.1m8.6-8.6 2.1-2.1"/></svg>
+        <span>Generate a tool</span>
+      </a>
+      <a href="#train" class="btn btn-outline-light btn-lg">Open Training Studio</a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer class="footer">
+  <div class="container footer-inner">
+    <div class="footer-brand">
+      <div class="footer-logo">
+        <img src="assets/tooltwin.png" alt="ToolTwin" />
+        <span>ToolTwin</span>
+      </div>
+      <p>Design tools for robots. Train robots to use them.</p>
+    </div>
+    <div class="footer-cols">
+      <div>
+        <span class="footer-h">Platform</span>
+        <a href="#foundry">Tool Foundry</a>
+        <a href="#train">Training Studio</a>
+        <a href="#specs">What you get</a>
+      </div>
+      <div>
+        <span class="footer-h">Learn</span>
+        <a href="#how">How it works</a>
+        <a href="#ecosystem">Ecosystem</a>
+        <a href="#faq">FAQ</a>
+      </div>
+      <div>
+        <span class="footer-h">Company</span>
+        <a href="#">Omnipresent Robotics</a>
+        <a href="#">AgiBot partnership</a>
+        <a href="#">Contact</a>
+      </div>
+      <div>
+        <span class="footer-h">Built on</span>
+        <a href="https://github.com/AgibotTech/genie_sim" target="_blank" rel="noopener">Genie Sim</a>
+        <a href="#">CadQuery</a>
+        <a href="#">NVIDIA Isaac Sim</a>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2026 Omnipresent Robotics · ToolTwin</span>
+    <span>A platform for the age of physical AI.</span>
+  </div>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>
