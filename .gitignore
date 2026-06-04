@@ -1,6 +1,11 @@
 # Local Claude Code agent settings & memory
 .claude/
 
+# Secrets — never commit real env files
+.env
+*.env
+!*.env.example
+
 # OS / editor cruft
 .DS_Store
 Thumbs.db
@@ -11,3 +16,7 @@ Thumbs.db
 # Node (if a build is added later)
 node_modules/
 dist/
+
+# Python
+__pycache__/
+*.pyc

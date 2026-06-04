@@ -1,0 +1,32 @@
+# Render Blueprint — deploys BOTH ToolTwin backend services.
+# In Render: New → Blueprint → connect this repo. It reads this file.
+# You'll be prompted for the OPENAI_API_KEY (marked sync:false below).
+services:
+  # --- AI bot: prompt -> structured parametric tool spec (OpenAI) ---
+  - type: web
+    name: tooltwin-ai
+    runtime: node
+    rootDir: ai-service
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    healthCheckPath: /
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false            # set this secret in the Render dashboard
+      - key: OPENAI_MODEL
+        value: gpt-4o-mini
+      - key: ALLOWED_ORIGINS
+        value: "*"             # tighten to your site origin once stable
+
+  # --- CAD service: archetype + params -> STL + GLB (CadQuery, Docker) ---
+  - type: web
+    name: tooltwin-cad
+    runtime: docker
+    rootDir: cad-service
+    dockerfilePath: ./Dockerfile
+    plan: starter              # OCCT can OOM the free 512 MB tier
+    healthCheckPath: /
+    envVars:
+      - key: ALLOWED_ORIGINS
+        value: "*"

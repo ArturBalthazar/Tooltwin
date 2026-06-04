@@ -1,0 +1,8 @@
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic==2.10.4
+# CadQuery bundles OCCT native binaries via cadquery-ocp (manylinux wheels).
+cadquery==2.5.2
+# STL -> GLB conversion + mesh stats.
+trimesh==4.5.3
+numpy==1.26.4
