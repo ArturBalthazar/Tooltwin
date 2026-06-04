@@ -331,6 +331,7 @@ function buildArchetype(arch, p, scale) {
 
 function rebuildTool() {
   if (!scene) return;
+  lastGLBSig = null;   // primitives now replace any loaded CAD model
   // dispose previous meshes
   meshHolder.getChildMeshes().forEach(x => x.dispose());
 
@@ -351,6 +352,7 @@ function rebuildTool() {
 }
 
 let renderWire = false;
+let lastGLBSig = null;   // signature of the GLB currently shown in the viewport
 function setWireframe(on) {
   renderWire = on;
   [bodyMat, accentMat].forEach(mat => { if (mat) mat.wireframe = on; });
@@ -427,6 +429,38 @@ function computeStats() {
 }
 
 /* ============================================================
+   REAL CAD MODEL — load the GLB from the CadQuery service into the viewport
+   ============================================================ */
+async function loadServerGLB(glbBlob) {
+  if (!BABYLON.SceneLoader) throw new Error('glTF loader not loaded');
+  const url = URL.createObjectURL(glbBlob);
+  let result;
+  try {
+    result = await BABYLON.SceneLoader.ImportMeshAsync('', '', url, scene, null, '.glb');
+  } finally {
+    setTimeout(() => URL.revokeObjectURL(url), 8000);
+  }
+  // drop whatever is currently shown (primitives or a previous GLB)
+  meshHolder.getChildMeshes().slice().forEach(m => m.dispose());
+  // keep the loader's coordinate-conversion root; parent it under meshHolder
+  const root = result.meshes.find(m => m.name === '__root__') || result.meshes[0];
+  if (root) root.parent = meshHolder;
+  result.meshes.forEach(m => { if (m.getTotalVertices && m.getTotalVertices() > 0) m.material = bodyMat; });
+  setWireframe(renderWire);
+  lastGLBSig = serverBuild.sig;
+  frameCamera();
+}
+
+// Ensure a CAD build exists and show its GLB (skips if already shown / offline).
+async function showServerModel() {
+  if (!state.hasTool) return;
+  try {
+    const sb = await ensureServerBuild();
+    if (sb && sb.glb && lastGLBSig !== sb.sig) await loadServerGLB(sb.glb);
+  } catch (e) { console.warn('[ToolTwin] showServerModel failed:', e.message); }
+}
+
+/* ============================================================
    CADQUERY-FLAVORED SOURCE (for the readout + .py download)
    ============================================================ */
 function cqSource(full = false) {
@@ -477,7 +511,7 @@ function goTo(target) {
   if (target === 'welcome') { showScreen('welcome'); return; }
   showScreen('steps');
   showStep(target);
-  if (target === 'export') fillReview();
+  if (target === 'export') { fillReview(); showServerModel(); }
   if (target === 'tune') { updateReadout(); }
 }
 
@@ -561,6 +595,7 @@ async function runGeneration() {
     applySchema(spec.parameters);
     log(`> archetype = ${state.archetype}`);
     log(`> ${schema().length} parameters exposed${spec.tokens ? `  (${spec.tokens} tokens)` : ''}`);
+    console.log('[ToolTwin] AI tool spec:', spec);
   } else {
     state.archetype = sel === 'auto' ? detectArchetype(prompt) : sel;
     state.toolName = ARCHETYPES[state.archetype].name;
@@ -570,20 +605,34 @@ async function runGeneration() {
   $('#vpArchetype').textContent = state.archetype;
   $('#vpModelName').textContent = state.toolName;
 
-  stage('Writing CadQuery script…');
-  log(`> emit ${ARCHETYPES[state.archetype].cqClass}(...)`);
-  await pause(450);
-  stage('Building your twin…');
-  log('> tessellating mesh\n> watertight ✓  manifold ✓');
-  await pause(450);
-
-  build.hidden = true;
-  $('#specChips').hidden = false;
+  // local primitive preview is ready immediately
   state.hasTool = true;
   buildTuneSliders();
   rebuildTool();
   updateReadout();
   syncToolToTraining();
+
+  // run the real CadQuery build and show its GLB in the viewport
+  stage('Running the CadQuery kernel…');
+  log(`> emit ${ARCHETYPES[state.archetype].cqClass}(...)`);
+  let built = false;
+  try {
+    const sb = await ensureServerBuild();
+    if (sb && sb.glb) {
+      log(`> CadQuery solid built${sb.stats && sb.stats.triangles ? ` · ${sb.stats.triangles} triangles` : ''}`);
+      await loadServerGLB(sb.glb);
+      built = true;
+      console.log('[ToolTwin] Loaded CadQuery model from cad-service');
+    }
+  } catch (e) {
+    log(`> cad service unavailable (${e.message})`);
+    console.warn('[ToolTwin] CAD build failed:', e.message);
+  }
+  log(built ? '> done.' : '> showing local preview (primitives)');
+  await pause(built ? 250 : 100);
+
+  $('#specChips').hidden = false;
+  build.hidden = true;
   goTo('tune');
 }
 

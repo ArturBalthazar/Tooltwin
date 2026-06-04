@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>ToolTwin — Vision: where it fits in the robot economy</title>
+<meta name="description" content="How ToolTwin and a synthetic-data + training platform fit into Omnipresent Robotics' operational loop — built on NVIDIA Omniverse, Isaac, AgiBot's Genie Sim, and sim2real." />
+<link rel="icon" type="image/png" href="assets/favicon.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<!-- ============ NAV ============ -->
+<header class="nav" id="top">
+  <div class="nav-inner">
+    <a class="nav-logo" href="index.html" aria-label="ToolTwin home">
+      <img src="assets/tooltwin-full.png" alt="ToolTwin" />
+    </a>
+    <nav class="nav-links">
+      <a href="index.html#foundry">Foundry</a>
+      <a href="index.html#train">Training Studio</a>
+      <a href="index.html#ecosystem">Ecosystem</a>
+      <a href="vision.html" class="is-current">Vision</a>
+    </nav>
+    <div class="nav-actions">
+      <a href="index.html#foundry" class="btn btn-primary">
+        <span>Launch app</span>
+      </a>
+    </div>
+  </div>
+</header>
+
+<!-- ============ HERO ============ -->
+<section class="vis-hero">
+  <div class="hero-bg" aria-hidden="true"></div>
+  <div class="container vis-hero-inner">
+    <span class="eyebrow">Platform &amp; Vision</span>
+    <h1 class="vis-title">Where ToolTwin fits in<br/>the robot economy.</h1>
+    <p class="vis-lede">
+      ToolTwin is the visible tip of a bigger idea: a <b>synthetic-data &amp; robot-training
+      platform</b> that plugs into <b>Omnipresent Robotics'</b> operational loop. This page
+      explains the technology landscape, where MeetKai operates, and what's built so far.
+    </p>
+  </div>
+</section>
+
+<!-- ============ OPERATIONAL LOOP ============ -->
+<section class="section section-loop">
+  <div class="container">
+    <div class="section-head">
+      <span class="eyebrow">The operational loop</span>
+      <h2 class="section-title">We operate where the loop is taught.</h2>
+      <p class="section-lede">Omnipresent's loop runs from supply chain to deployment and back. MeetKai plugs into two stations — <b>Training</b> and <b>Data</b> — the part that turns robots into capable workers.</p>
+    </div>
+
+    <figure class="loop-fig">
+      <img src="assets/operational-loop.png" alt="Omnipresent Robotics operational loop: Supply chain, Compute, Training, Evaluation, Assembly, Deployment, Data." />
+      <figcaption class="loop-caption">
+        <span class="loop-chip"><b>LOOP / 03</b> Training — behaviors · skills · policies</span>
+        <span class="loop-chip"><b>LOOP / 07</b> Data — synthetic generation &amp; field feedback</span>
+        <span class="loop-note">Source: omnipresentrobotics.com · highlights show MeetKai's lane.</span>
+      </figcaption>
+    </figure>
+
+    <div class="split-statement">
+      <div><span class="ss-k">Omnipresent</span><span class="ss-v">supplies &amp; deploys the robots (AgiBot hardware).</span></div>
+      <div class="ss-x">×</div>
+      <div><span class="ss-k">MeetKai</span><span class="ss-v">supplies the synthetic data &amp; trains the brains.</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FOUR TECHNOLOGIES ============ -->
+<section class="section section-terms">
+  <div class="container">
+    <div class="section-head">
+      <span class="eyebrow">The technology landscape</span>
+      <h2 class="section-title">Four terms, one stack.</h2>
+      <p class="section-lede">Modern robot-learning is built from four layers that sit on top of each other.</p>
+    </div>
+
+    <div class="term-grid">
+      <div class="term-card">
+        <span class="term-tag">Foundation</span>
+        <h3>NVIDIA Omniverse</h3>
+        <p>NVIDIA's platform for physically-accurate 3D worlds, based on the <b>OpenUSD</b> scene format — the "engine and file standard" for industrial digital twins.</p>
+        <span class="term-role">Where our 3D artists' assets &amp; scenes live.</span>
+      </div>
+      <div class="term-card">
+        <span class="term-tag">Engine</span>
+        <h3>NVIDIA Isaac</h3>
+        <p>NVIDIA's robotics stack on Omniverse. <b>Isaac Sim</b> simulates robots and generates synthetic training data; <b>Isaac Lab</b> trains the AI policies.</p>
+        <span class="term-role">Turns our 3D data into robot skills.</span>
+      </div>
+      <div class="term-card">
+        <span class="term-tag">Open layer</span>
+        <h3>Genie Sim</h3>
+        <p><b>AgiBot's open-source</b> simulation platform, built on Isaac Sim and tuned for humanoid manipulation — LLM scene generation, large datasets, validated sim2real for the G1/G2.</p>
+        <span class="term-role">On-brand: Todd buys AgiBot robots.</span>
+      </div>
+      <div class="term-card">
+        <span class="term-tag">The method</span>
+        <h3>sim2real</h3>
+        <p>Train a robot's brain entirely in simulation and deploy on a real robot — bridged by <b>domain randomization</b> (varying lighting, textures, physics, positions).</p>
+        <span class="term-role">Why synthetic data is valuable.</span>
+      </div>
+    </div>
+
+    <div class="stack-flow" aria-label="Technology stack, bottom to top">
+      <span class="stack-step">Omniverse / OpenUSD</span>
+      <span class="stack-sep">→</span>
+      <span class="stack-step">Isaac Sim</span>
+      <span class="stack-sep">→</span>
+      <span class="stack-step">Genie Sim</span>
+      <span class="stack-sep">→</span>
+      <span class="stack-step stack-step--out">sim2real policy</span>
+    </div>
+    <p class="stack-foot">MeetKai <b>feeds the bottom</b> (3D assets) and <b>operates the middle</b> (simulation + training).</p>
+  </div>
+</section>
+
+<!-- ============ CAKE & CHERRY ============ -->
+<section class="section section-cc">
+  <div class="container">
+    <div class="section-head">
+      <span class="eyebrow eyebrow-light">The product</span>
+      <h2 class="section-title">The cake, and the cherry.</h2>
+      <p class="section-lede section-lede-light">Two layers — one is the recurring business, the other is the on-ramp that brings people to it.</p>
+    </div>
+
+    <div class="cc-grid">
+      <div class="cc-card cc-cake">
+        <span class="cc-label">The cake — the core business</span>
+        <h3>Synthetic Data &amp; Training Platform</h3>
+        <p>A dedicated, GPU-backed service that generates synthetic 3D data, trains robot policies in simulation, and validates sim2real transfer to AgiBot hardware.</p>
+        <ul class="cc-list">
+          <li>Authored by our 3D team, expanded with domain randomization</li>
+          <li><b>Web layer</b> for humans — configure, launch, monitor, download a policy</li>
+          <li><b>API</b> for software &amp; AI agents to drive data + training programmatically</li>
+        </ul>
+      </div>
+      <div class="cc-card cc-cherry">
+        <span class="cc-label">The cherry — the hook</span>
+        <h3>ToolTwin</h3>
+        <p>Describe a tool in plain language → an AI writes parametric CAD → you get a printable STL + a web/sim GLB → tune it → send it straight into training.</p>
+        <ul class="cc-list">
+          <li>A creative, memorable front-door in a competitive market</li>
+          <li>Create the tool here, train your robot here, deploy on AgiBot robots</li>
+          <li>Draws developers &amp; customers <b>into Todd's ecosystem</b></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ WHAT'S BUILT ============ -->
+<section class="section section-status">
+  <div class="container">
+    <div class="section-head">
+      <span class="eyebrow">Status today</span>
+      <h2 class="section-title">What's actually built.</h2>
+      <p class="section-lede">A working web prototype with a real AI + CAD backend, and a faithful mock-up of the heavy training engine — the right order to validate the funnel before investing in the full GPU stack.</p>
+    </div>
+
+    <div class="status-grid">
+      <div class="status-card">
+        <span class="status-badge sb-mixed">Partly real</span>
+        <h3>Tool Foundry</h3>
+        <p>Describe → Tune → Export, with a live 3D viewport. A real <b>AI service</b> (OpenAI) returns a parametric spec and even invents new parameters from the prompt; a real <b>CadQuery service</b> returns STL + GLB + print stats.</p>
+        <span class="status-note">Placeholder: the CAD geometry is simple for now — real recipes come next.</span>
+      </div>
+      <div class="status-card">
+        <span class="status-badge sb-mock">Realistic mock-up</span>
+        <h3>Training Studio</h3>
+        <p>Robot → Task → Train: pick an AgiBot G1/G2, attach your tool, set domain randomization &amp; policy, launch, and watch a live dashboard (episodes, success rate, sim2real gap).</p>
+        <span class="status-note">This is the human web layer; it doesn't yet run real simulations.</span>
+      </div>
+      <div class="status-card">
+        <span class="status-badge sb-real">Live</span>
+        <h3>Backend services</h3>
+        <p>Two cloud services deployed: the OpenAI-driven <b>AI bot</b> and the <b>CadQuery</b> build service. The frontend degrades gracefully to offline mode if they're unavailable.</p>
+        <span class="status-note">Built on Node, Python/FastAPI, and CadQuery.</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ROADMAP ============ -->
+<section class="section section-roadmap">
+  <div class="container narrow">
+    <div class="section-head">
+      <span class="eyebrow">Where this goes</span>
+      <h2 class="section-title">Next steps.</h2>
+    </div>
+    <ol class="roadmap">
+      <li><span class="rm-n">01</span><div><b>Confirm the wedge</b> — Training + Data as MeetKai's lane in Omnipresent's loop.</div></li>
+      <li><span class="rm-n">02</span><div><b>Stand up a minimal real backend</b> — one GPU server running a single task end-to-end (scene → data → train → sim2real policy) behind the existing Training Studio UI and a small API.</div></li>
+      <li><span class="rm-n">03</span><div><b>Productionize ToolTwin geometry</b> — replace placeholder CadQuery with genuinely useful, well-modeled, oriented tool recipes.</div></li>
+      <li><span class="rm-n">04</span><div><b>Package the data offering</b> — asset libraries and randomized scene generators as the sellable "synthetic data" product.</div></li>
+      <li><span class="rm-n">05</span><div><b>Go API-first</b> — publish the programmatic interface so partners and AI agents can consume data + training without the UI.</div></li>
+    </ol>
+  </div>
+</section>
+
+<!-- ============ CTA ============ -->
+<section class="section section-cta">
+  <div class="container cta-inner">
+    <div class="cta-text">
+      <span class="eyebrow eyebrow-light">See it in action</span>
+      <h2>Try the Foundry and Training Studio.</h2>
+      <p>The explanation above is best understood by using the prototype — generate a tool, then train a robot to use it.</p>
+    </div>
+    <div class="cta-actions">
+      <a href="index.html#foundry" class="btn btn-light btn-lg">Open the app</a>
+      <a href="index.html#ecosystem" class="btn btn-outline-light btn-lg">Ecosystem</a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer class="footer">
+  <div class="container footer-inner">
+    <div class="footer-brand">
+      <div class="footer-logo">
+        <img src="assets/tooltwin.png" alt="ToolTwin" />
+        <span>ToolTwin</span>
+      </div>
+      <p>Design tools for robots. Train robots to use them.</p>
+    </div>
+    <div class="footer-cols">
+      <div>
+        <span class="footer-h">Platform</span>
+        <a href="index.html#foundry">Tool Foundry</a>
+        <a href="index.html#train">Training Studio</a>
+        <a href="vision.html">Vision</a>
+      </div>
+      <div>
+        <span class="footer-h">Learn</span>
+        <a href="index.html#how">How it works</a>
+        <a href="index.html#ecosystem">Ecosystem</a>
+        <a href="index.html#faq">FAQ</a>
+      </div>
+      <div>
+        <span class="footer-h">Company</span>
+        <a href="#">Omnipresent Robotics</a>
+        <a href="#">AgiBot partnership</a>
+        <a href="#">Contact</a>
+      </div>
+      <div>
+        <span class="footer-h">Built on</span>
+        <a href="https://github.com/AgibotTech/genie_sim" target="_blank" rel="noopener">Genie Sim</a>
+        <a href="#">NVIDIA Isaac</a>
+        <a href="#">NVIDIA Omniverse</a>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2026 Omnipresent Robotics · ToolTwin</span>
+    <span>A platform for the age of physical AI.</span>
+  </div>
+</footer>
+
+</body>
+</html>
